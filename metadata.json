@@ -1,0 +1,7 @@
+{
+  "name": "Agora AI",
+  "description": "A web platform where users can engage in real-time debates with an advanced AI on any topic, using either text or natural voice conversation, with support for English and Hinglish.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
