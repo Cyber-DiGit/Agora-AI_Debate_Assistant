@@ -24,9 +24,9 @@ const DebateHistoryList: React.FC<DebateHistoryListProps> = ({ history, onViewHi
   }
 
   return (
-    <div className="p-8 bg-gray-800 rounded-lg shadow-xl">
+    <div className="p-8 bg-slate-800 rounded-lg shadow-xl">
       <div className="flex items-center gap-3 mb-4">
-        <Icon name="history" className="text-gray-400" />
+        <Icon name="history" className="text-slate-400" />
         <h2 className="text-2xl font-bold text-center">Debate History</h2>
       </div>
       <ul className="space-y-3">
@@ -34,11 +34,11 @@ const DebateHistoryList: React.FC<DebateHistoryListProps> = ({ history, onViewHi
           <li key={item.id}>
             <button
               onClick={() => onViewHistory(item)}
-              className="w-full text-left p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex justify-between items-center"
+              className="w-full text-left p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors flex justify-between items-center"
             >
               <div>
-                <p className="font-bold text-gray-100 truncate">{item.settings.topic}</p>
-                <p className="text-sm text-gray-400">
+                <p className="font-bold text-slate-100 truncate">{item.settings.topic}</p>
+                <p className="text-sm text-slate-400">
                   {new Date(item.timestamp).toLocaleString()}
                 </p>
               </div>

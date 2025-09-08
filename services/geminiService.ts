@@ -1,11 +1,12 @@
 import { GoogleGenAI, Chat, Type } from "@google/genai";
 import { DebateSettings, Stance, GroundingSource, Message, Winner } from '../types';
+import { API_KEY } from '../env';
 
-if (!process.env.API_KEY) {
+if (!API_KEY) {
   throw new Error("API_KEY environment variable not set");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 let chat: Chat | null = null;
 
 const createSystemInstruction = (settings: DebateSettings, aiStance: Stance): string => {

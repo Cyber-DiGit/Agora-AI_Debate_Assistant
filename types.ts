@@ -33,3 +33,9 @@ export interface DebateRecord extends DebateState {
   winner: Winner;
   judgement: string;
 }
+
+export interface UserProfile {
+    name: string;
+    email: string;
+    picture: string;
+}

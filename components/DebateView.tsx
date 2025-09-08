@@ -108,11 +108,11 @@ const DebateView: React.FC<DebateViewProps> = ({
   };
   
   return (
-    <div className="flex flex-col h-[85vh] max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-2xl">
-      <header className="p-4 border-b border-gray-700 flex justify-between items-center">
+    <div className="flex flex-col h-[85vh] max-w-4xl mx-auto bg-slate-800 rounded-lg shadow-2xl">
+      <header className="p-4 border-b border-slate-700 flex justify-between items-center">
         <div>
           <h2 className="font-bold text-lg">{initialDebateState.settings.topic}</h2>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-slate-400">
             You: <span className="font-semibold text-indigo-400">{initialDebateState.settings.userStance}</span> | 
             AI: <span className="font-semibold text-purple-400">{initialDebateState.aiStance}</span>
           </p>
@@ -128,7 +128,7 @@ const DebateView: React.FC<DebateViewProps> = ({
         ))}
         {initialDebateState.isAiTyping && (
            <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
               <Icon name="ai" />
             </div>
             <div className="flex items-center space-x-1">
@@ -141,8 +141,8 @@ const DebateView: React.FC<DebateViewProps> = ({
         <div ref={messagesEndRef} />
       </div>
       
-      <footer className="p-4 border-t border-gray-700">
-        <div className="flex items-center bg-gray-700 rounded-lg px-2">
+      <footer className="p-4 border-t border-slate-700">
+        <div className="flex items-center bg-slate-700 rounded-lg px-2">
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
@@ -161,7 +161,7 @@ const DebateView: React.FC<DebateViewProps> = ({
            <button
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || initialDebateState.isAiTyping}
-              className="p-2 text-indigo-400 hover:text-indigo-300 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
+              className="p-2 text-indigo-400 hover:text-indigo-300 disabled:text-slate-500 disabled:cursor-not-allowed transition-colors"
            >
               <Icon name="send" />
            </button>
