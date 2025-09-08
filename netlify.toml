@@ -1,0 +1,14 @@
+# This configuration is for a single-page application (SPA).
+
+[build]
+  # The public directory containing your site's assets. 
+  # Since your index.html is in the root, we set this to the root.
+  publish = "/"
+
+[[redirects]]
+  # This rule rewrites all paths to your index.html file.
+  # This is crucial for client-side routing to work correctly.
+  # Without it, refreshing a page on a route other than "/" would result in a 404 error.
+  from = "/*"
+  to = "/index.html"
+  status = 200
