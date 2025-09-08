@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DebateSettings, DebateState, DebateRecord, UserProfile } from './types';
 import { getDebateWinner } from './services/geminiService';
 import { initGoogleAuth, signIn, signOut } from './services/googleAuthService';
@@ -17,75 +17,81 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('setup');
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<DebateRecord | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
-  const [isDriveLoading, setIsDriveLoading] = useState(false);
+  const isInitialMount = useRef(true);
 
-  // Initialize Google Auth and load user
+  // --- 1. INITIAL LOAD & AUTH STARTUP (Runs Once) ---
   useEffect(() => {
-    initGoogleAuth((profile) => {
-      setUser(profile);
-      setIsAuthInitialized(true);
-    });
-  }, []);
-
-  // Load data from Drive or localStorage when auth state is known
-  useEffect(() => {
-    const loadData = async () => {
-      if (!isAuthInitialized) return;
-
-      setIsDriveLoading(true);
-      try {
-        if (user) {
-          const driveHistory = await loadHistoryFromDrive();
-          setHistory(driveHistory);
-        } else {
-          const savedHistory = localStorage.getItem('agora-ai-history');
-          if (savedHistory) {
-            setHistory(JSON.parse(savedHistory));
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load history:", error);
-        // Fallback or show error
-      } finally {
-        setIsDriveLoading(false);
-      }
-    };
-    loadData();
-  }, [user, isAuthInitialized]);
-
-
-  // Persist history to Drive or localStorage
-  useEffect(() => {
-    const saveData = async () => {
-        if (!isAuthInitialized) return; // Don't save until we know the login state
-
-        try {
-            if (user) {
-                await saveHistoryToDrive(history);
-            } else {
-                localStorage.setItem('agora-ai-history', JSON.stringify(history));
-            }
-        } catch (error) {
-            console.error("Failed to save history:", error);
-        }
-    };
-    saveData();
-  }, [history, user, isAuthInitialized]);
-
-  // Load active debate from localStorage on initial render
-   useEffect(() => {
+    // Immediately load any existing local data to make the app interactive right away.
     try {
+      const savedHistory = localStorage.getItem('agora-ai-history');
+      if (savedHistory) {
+        setHistory(JSON.parse(savedHistory));
+      }
       const savedDebate = localStorage.getItem('agora-ai-debate');
       if (savedDebate) {
         setDebateState(JSON.parse(savedDebate));
         setView('debate');
       }
     } catch (error) {
-      console.error("Failed to load saved debate:", error);
+      console.error("Failed to load from localStorage:", error);
+      // Clear potentially corrupted storage
+      localStorage.removeItem('agora-ai-history');
       localStorage.removeItem('agora-ai-debate');
     }
+
+    // Start the Google Auth flow in the background. It will update the `user` state when complete.
+    initGoogleAuth((profile) => {
+      setUser(profile);
+    });
   }, []);
+
+  // --- 2. GOOGLE DRIVE SYNC (Runs when user logs in/out) ---
+  useEffect(() => {
+    const syncFromDrive = async () => {
+      if (user) {
+        // User is logged in, fetch their history from the cloud.
+        try {
+          const driveHistory = await loadHistoryFromDrive();
+          setHistory(driveHistory);
+        } catch (error) {
+          console.error("Failed to sync history from Google Drive:", error);
+        }
+      } else {
+        // User logged out, ensure we are using local storage version.
+        const savedHistory = localStorage.getItem('agora-ai-history');
+        if (savedHistory) {
+          setHistory(JSON.parse(savedHistory));
+        } else {
+          setHistory([]);
+        }
+      }
+    };
+    syncFromDrive();
+  }, [user]);
+
+  // --- 3. PERSIST HISTORY (Runs when history changes) ---
+  useEffect(() => {
+    // Don't save on the very first render before initial data has been loaded.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const saveData = async () => {
+      try {
+        if (user) {
+          // If logged in, save to Google Drive.
+          await saveHistoryToDrive(history);
+        } else {
+          // Otherwise, save to local browser storage.
+          localStorage.setItem('agora-ai-history', JSON.stringify(history));
+        }
+      } catch (error) {
+        console.error("Failed to save history:", error);
+      }
+    };
+    saveData();
+  }, [history]); // This effect now correctly depends only on history changes
 
   // Persist active debate state to localStorage (always local)
   useEffect(() => {
@@ -96,7 +102,7 @@ const App: React.FC = () => {
         localStorage.removeItem('agora-ai-debate');
       }
     } catch (error) {
-      console.error("Failed to save debate:", error);
+      console.error("Failed to save active debate:", error);
     }
   }, [debateState]);
 
@@ -154,19 +160,13 @@ const App: React.FC = () => {
     setView('history');
   };
   
+  const handleSignOut = () => {
+    signOut();
+    // After signing out, explicitly set user to null to trigger data reload from localStorage.
+    setUser(null);
+  };
+
   const renderView = () => {
-    if (!isAuthInitialized || isDriveLoading) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full text-center p-8">
-           <div className="flex items-center justify-center space-x-2 mt-6">
-             <span className="w-4 h-4 bg-indigo-400 rounded-full animate-pulse delay-0"></span>
-             <span className="w-4 h-4 bg-indigo-400 rounded-full animate-pulse delay-200"></span>
-             <span className="w-4 h-4 bg-indigo-400 rounded-full animate-pulse delay-400"></span>
-           </div>
-           <p className="mt-4 text-slate-400">Loading your debate history...</p>
-        </div>
-      );
-    }
     switch (view) {
       case 'judging':
         return (
@@ -212,7 +212,7 @@ const App: React.FC = () => {
                 </h1>
                 <p className="text-slate-400 mt-2">The arena for your ideas. Debate with AI.</p>
             </div>
-            <AuthHeader user={user} onLogin={signIn} onLogout={signOut} isReady={isAuthInitialized}/>
+            <AuthHeader user={user} onLogin={signIn} onLogout={handleSignOut} isReady={true}/>
         </div>
       </header>
       <main className="w-full h-full flex-grow max-w-4xl mt-4">
