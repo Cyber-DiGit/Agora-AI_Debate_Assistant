@@ -13,12 +13,24 @@ const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/res
 const SCOPES = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.profile';
 
 let onAuthChangeCallback: (profile: UserProfile | null) => void;
+let gapiInitialized = false;
+let gisInitialized = false;
+
+// This function is called when both libraries are loaded.
+// It attempts a silent sign-in.
+function attemptSilentSignIn() {
+  if (gapiInitialized && gisInitialized && window.tokenClient) {
+    window.tokenClient.requestAccessToken({ prompt: 'none' });
+  }
+}
 
 async function initializeGapiClient() {
   await window.gapi.client.init({
     apiKey: API_KEY,
     discoveryDocs: [DISCOVERY_DOC],
   });
+  gapiInitialized = true;
+  attemptSilentSignIn();
 }
 
 function gapiLoaded() {
@@ -30,12 +42,20 @@ function gisLoaded() {
     client_id: GOOGLE_CLIENT_ID,
     scope: SCOPES,
     callback: async (resp: any) => {
-      if (resp.error !== undefined) {
-        throw resp;
+      // A response with an error field means silent sign-in failed.
+      // This is expected if the user isn't logged in.
+      // We'll treat it as "signed out" and unblock the UI.
+      if (resp.error) {
+        console.log("Silent auth failed or user is signed out.");
+        onAuthChangeCallback(null);
+        return;
       }
+      // If we get here, we have a token and can fetch the user's profile.
       await fetchUserProfile();
     },
   });
+  gisInitialized = true;
+  attemptSilentSignIn();
 }
 
 async function fetchUserProfile() {
@@ -58,6 +78,7 @@ async function fetchUserProfile() {
 
 export const initGoogleAuth = (callback: (profile: UserProfile | null) => void) => {
     onAuthChangeCallback = callback;
+    
     const scriptGapi = document.createElement('script');
     scriptGapi.src = 'https://apis.google.com/js/api.js';
     scriptGapi.async = true;
@@ -74,9 +95,16 @@ export const initGoogleAuth = (callback: (profile: UserProfile | null) => void) 
 };
 
 export const signIn = () => {
+    if (!window.tokenClient) {
+        console.error("Google Identity Services client not initialized.");
+        return;
+    }
+
     if (window.gapi.client.getToken() === null) {
+      // First time sign-in, needs user consent.
       window.tokenClient.requestAccessToken({prompt: 'consent'});
     } else {
+      // User is already signed in, might be a token refresh.
       window.tokenClient.requestAccessToken({prompt: ''});
     }
 };
