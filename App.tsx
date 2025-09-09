@@ -8,33 +8,16 @@ import DebateView from './components/DebateView';
 import DebateHistoryView from './components/DebateHistoryView';
 import AuthHeader from './components/AuthHeader';
 import Icon from './components/Icon';
-import ConfigError from './components/ApiKeyError'; // RENAME: ApiKeyError -> ConfigError
-import { API_KEY, GOOGLE_CLIENT_ID } from './env';
+
+type View = 'setup' | 'debate' | 'history' | 'judging';
 
 const App: React.FC = () => {
-  // CRITICAL: Check for all required environment variables at startup.
-  const configErrors: string[] = [];
-  if (!API_KEY) {
-    configErrors.push("Google Gemini API Key (API_KEY) is missing.");
-  }
-  if (!GOOGLE_CLIENT_ID) {
-    configErrors.push("Google Client ID (GOOGLE_CLIENT_ID) is missing.");
-  }
-
-  // If any keys are missing, render the error component and stop further execution.
-  if (configErrors.length > 0) {
-    return <ConfigError messages={configErrors} />;
-  }
-  
-  // --- If all keys exist, render the main application ---
   const [debateState, setDebateState] = useState<DebateState | null>(null);
   const [history, setHistory] = useState<DebateRecord[]>([]);
   const [view, setView] = useState<View>('setup');
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<DebateRecord | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const isInitialMount = useRef(true);
-
-  type View = 'setup' | 'debate' | 'history' | 'judging';
 
   // --- 1. INITIAL LOAD & AUTH STARTUP (Runs Once) ---
   useEffect(() => {
